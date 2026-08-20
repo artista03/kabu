@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>持ち株のようす</title>
+<style>
+  :root{
+    color-scheme:light;
+    --paper:#FBFAF7; --card:#FFFFFF; --line:#E3DFD6; --line2:#F0EDE7;
+    --ink:#1A1A1A; --ink2:#5C5A55; --ink3:#8C8981;
+    --up:#0A6E3D; --dn:#B02418; --accent:#1B3A5C; --lock:#8A6A2F;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      color-scheme:dark;
+      --paper:#14161A; --card:#1C1F25; --line:#2E333B; --line2:#252A31;
+      --ink:#F0F1F3; --ink2:#AFB5BD; --ink3:#7E858E;
+      --up:#4FC98A; --dn:#F27865; --accent:#8FB6DC; --lock:#D8AC5E;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; padding:22px 16px 64px;
+    background:var(--paper); color:var(--ink);
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    font-size:19px; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:18px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
+  .up{color:var(--up)} .dn{color:var(--dn)}
+
+  header h1{font-size:24px; margin:0; letter-spacing:.04em}
+  header .when{color:var(--ink3); font-size:16px; margin-top:2px}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 20px}
+
+  .hero{text-align:center; padding:30px 20px}
+  .hero .cap{font-size:17px; color:var(--ink2); letter-spacing:.06em}
+  .hero .big{
+    font-size:68px; font-weight:800; line-height:1.05; letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums; margin:8px 0 4px;
+  }
+  .hero .sub{font-size:17px; color:var(--ink2)}
+  .hero .sub b{font-variant-numeric:tabular-nums}
+
+  .money{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px}
+  .m{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px}
+  .m .k{font-size:15px; color:var(--ink2)}
+  .m .v{font-size:29px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:4px; line-height:1.2}
+  .m .s{font-size:14px; color:var(--ink3); font-variant-numeric:tabular-nums}
+
+  .lock{border:2px dashed var(--line); background:transparent}
+  .lock .lt{font-size:18px; font-weight:700; margin-bottom:4px}
+  .lock .ld{font-size:15px; color:var(--ink2); margin-bottom:14px}
+  .lock form{display:flex; gap:10px; flex-wrap:wrap}
+  .lock input{
+    flex:1 1 200px; font:inherit; font-size:19px; padding:12px 14px;
+    border:1px solid var(--line); border-radius:11px;
+    background:var(--card); color:var(--ink); min-width:0;
+  }
+  .lock button, .relock{
+    font:inherit; font-size:18px; font-weight:700; padding:12px 26px;
+    border:0; border-radius:11px; background:var(--accent); color:#fff; cursor:pointer;
+  }
+  .lock button:disabled{opacity:.5; cursor:default}
+  .relock{background:transparent; color:var(--ink3); font-weight:400; font-size:15px; padding:6px 0}
+  .lock input:focus-visible, .lock button:focus-visible, .relock:focus-visible{
+    outline:3px solid var(--accent); outline-offset:2px;
+  }
+  .msg{font-size:16px; margin-top:12px}
+  .msg.bad{color:var(--dn)}
+
+  h2{font-size:18px; margin:6px 0 0; letter-spacing:.05em; color:var(--ink2); font-weight:700}
+  .rows{display:flex; flex-direction:column}
+  .row{
+    display:grid; grid-template-columns:1fr auto auto; gap:6px 16px;
+    align-items:baseline; padding:13px 4px; border-bottom:1px solid var(--line2);
+  }
+  .row:last-child{border-bottom:0}
+  .row .nm{font-size:18px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .row .cd{font-size:14px; color:var(--ink3); margin-right:8px; font-variant-numeric:tabular-nums}
+  .row .px{font-size:18px; font-variant-numeric:tabular-nums; color:var(--ink2)}
+  .row .ch{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; min-width:88px; text-align:right}
+  .row .extra{
+    grid-column:1 / -1; font-size:15px; color:var(--ink3);
+    font-variant-numeric:tabular-nums; display:none;
+  }
+  body.open .row .extra{display:block}
+
+  footer{color:var(--ink3); font-size:14px; line-height:1.9; text-align:center; margin-top:10px}
+  .err{background:var(--card); border:1px solid var(--dn); border-radius:14px; padding:18px 20px; color:var(--dn)}
+  @media (max-width:420px){
+    body{font-size:18px}
+    .hero .big{font-size:54px}
+    .row .px{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>持ち株のようす</h1>
+    <div class="when" id="when">読み込んでいます…</div>
+  </header>
+
+  <section class="card hero">
+    <div class="cap">きょうの値動き（全体）</div>
+    <div class="big num" id="pf">—</div>
+    <div class="sub" id="idx"></div>
+  </section>
+
+  <section class="card lock" id="lockBox" hidden>
+    <div class="lt">🔒 金額を見る</div>
+    <div class="ld">あいことばを入れると、評価額と配当も表示されます。</div>
+    <form id="pwForm">
+      <input type="password" id="pw" placeholder="あいことば"
+             autocomplete="current-password" enterkeyhint="go" aria-label="あいことば">
+      <button type="submit" id="pwBtn">見る</button>
+    </form>
+    <div class="msg" id="pwMsg"></div>
+  </section>
+
+  <div class="money" id="money" hidden></div>
+  <div id="relockWrap" hidden style="text-align:right">
+    <button type="button" class="relock" id="relock">金額を隠す</button>
+  </div>
+
+  <h2 id="listHead">値上がりした順</h2>
+  <section class="card">
+    <div class="rows" id="rows"></div>
+  </section>
+
+  <footer>
+    株価は株探より取得。20分ほど遅れることがあります。<br>
+    このページは検索には出ません。金額はあいことばがないと読めません。
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY = "mochikabu.pw";
+  var ITER = 250000;
+  var pub = null, sec = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var jp = function (n) { return Math.round(n).toLocaleString("ja-JP"); };
+  var sign = function (n, d) { return (n >= 0 ? "+" : "") + n.toFixed(d === undefined ? 2 : d); };
+  var cls = function (n) { return n > 0 ? "up" : (n < 0 ? "dn" : ""); };
+
+  function oku(n) {
+    var s = n < 0 ? "−" : "", a = Math.abs(n);
+    if (a >= 100000000) {
+      return s + Math.floor(a / 100000000) + "億" + jp((a % 100000000) / 10000) + "万円";
+    }
+    return s + jp(a / 10000) + "万円";
+  }
+  function manSigned(n) {
+    return (n >= 0 ? "+" : "−") + jp(Math.abs(n) / 10000) + "万円";
+  }
+
+  // ---------- 公開部分 ----------
+  function renderPublic(p) {
+    $("when").textContent = p.updated + " 現在　" + p.count + "銘柄";
+
+    var el = $("pf");
+    el.textContent = sign(p.portfolio_chg) + "%";
+    el.className = "big num " + cls(p.portfolio_chg);
+
+    if (p.n225) {
+      var d = p.portfolio_chg - p.n225.chg;
+      $("idx").innerHTML = "日経平均は <b class=\"" + cls(p.n225.chg) + "\">"
+        + sign(p.n225.chg) + "%</b>　／　日経より <b class=\"" + cls(d) + "\">"
+        + sign(d) + "ポイント</b> " + (d >= 0 ? "上" : "下");
+    }
+
+    var rows = $("rows");
+    rows.textContent = "";
+    p.stocks.forEach(function (s) {
+      var r = document.createElement("div");
+      r.className = "row";
+      r.dataset.code = s.code;
+      r.innerHTML =
+        '<span class="nm"><span class="cd num">' + s.code + "</span>" + esc(s.name) + "</span>"
+        + '<span class="px">' + jp(s.price) + "円</span>"
+        + '<span class="ch ' + cls(s.chg) + '">' + sign(s.chg) + "%</span>"
+        + '<span class="extra"></span>';
+      rows.appendChild(r);
+    });
+  }
+
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  // ---------- 金額部分 ----------
+  function renderSecret(s) {
+    var m = $("money");
+    m.textContent = "";
+    var cards = [
+      ["評価額", oku(s.total), "34銘柄の合計"],
+      ["きょうの増減", manSigned(s.day), sign(s.day / (s.total - s.day) * 100) + "%", cls(s.day)],
+      ["買値からの損益", manSigned(s.unreal), "買値 " + oku(s.cost), cls(s.unreal)],
+      ["年間の配当", oku(s.div_year), "手取り " + oku(s.div_net) + "／月 " + oku(s.div_net / 12)]
+    ];
+    cards.forEach(function (c) {
+      var d = document.createElement("div");
+      d.className = "m";
+      d.innerHTML = '<div class="k">' + c[0] + "</div>"
+        + '<div class="v ' + (c[3] || "") + '">' + c[1] + "</div>"
+        + '<div class="s">' + c[2] + "</div>";
+      m.appendChild(d);
+    });
+    m.hidden = false;
+    $("relockWrap").hidden = false;
+
+    var by = {};
+    s.stocks.forEach(function (x) { by[x.code] = x; });
+    Array.prototype.forEach.call(document.querySelectorAll(".row"), function (r) {
+      var x = by[r.dataset.code];
+      if (!x) return;
+      var parts = ["評価額 " + jp(x.value / 10000) + "万円",
+                   "きょう " + manSigned(x.day)];
+      if (x.div) parts.push("配当 " + jp(x.div / 10000) + "万円/年（" + x.ypct.toFixed(2) + "%）");
+      r.querySelector(".extra").textContent = parts.join("　／　");
+    });
+
+    document.body.classList.add("open");
+    $("lockBox").hidden = true;
+    $("listHead").textContent = "値上がりした順（金額つき）";
+  }
+
+  function lockAgain() {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    sec = null;
+    document.body.classList.remove("open");
+    $("money").hidden = true;
+    $("relockWrap").hidden = true;
+    $("lockBox").hidden = false;
+    $("pw").value = "";
+    $("pwMsg").textContent = "";
+    $("listHead").textContent = "値上がりした順";
+  }
+
+  // ---------- 復号 ----------
+  function b64bytes(b64) {
+    var bin = atob(b64.trim());
+    var a = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { a[i] = bin.charCodeAt(i); }
+    return a;
+  }
+
+  function decrypt(b64, pw) {
+    var raw = b64bytes(b64);
+    var salt = raw.slice(0, 16), iv = raw.slice(16, 28), data = raw.slice(28);
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(pw),
+      "PBKDF2", false, ["deriveKey"])
+      .then(function (km) {
+        return crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: salt, iterations: ITER, hash: "SHA-256" },
+          km, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+      })
+      .then(function (key) {
+        return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
+      })
+      .then(function (buf) {
+        return JSON.parse(new TextDecoder().decode(buf));
+      });
+  }
+
+  var encText = null;
+
+  function tryUnlock(pw, remember) {
+    var msg = $("pwMsg"), btn = $("pwBtn");
+    msg.className = "msg";
+    msg.textContent = "確認しています…";
+    btn.disabled = true;
+    return decrypt(encText, pw).then(function (s) {
+      sec = s;
+      if (remember) { try { localStorage.setItem(KEY, pw); } catch (e) {} }
+      renderSecret(s);
+    }).catch(function () {
+      msg.className = "msg bad";
+      msg.textContent = "あいことばが違うようです。もう一度お試しください。";
+      try { localStorage.removeItem(KEY); } catch (e) {}
+    }).then(function () { btn.disabled = false; });
+  }
+
+  // ---------- 起動 ----------
+  function bust(u) { return u + "?t=" + Date.now(); }
+
+  fetch(bust("public.json"), { cache: "no-store" })
+    .then(function (r) {
+      if (!r.ok) { throw new Error("public.json " + r.status); }
+      return r.json();
+    })
+    .then(function (p) {
+      pub = p;
+      renderPublic(p);
+      return fetch(bust("secret.enc"), { cache: "no-store" });
+    })
+    .then(function (r) { return r.ok ? r.text() : null; })
+    .then(function (t) {
+      if (!t) { return; }
+      encText = t;
+      if (!window.crypto || !crypto.subtle) {
+        $("lockBox").hidden = false;
+        $("pwMsg").className = "msg bad";
+        $("pwMsg").textContent = "このブラウザでは金額表示が使えません。";
+        return;
+      }
+      $("lockBox").hidden = false;
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch (e) {}
+      if (saved) { tryUnlock(saved, false); }
+    })
+    .catch(function (e) {
+      var d = document.createElement("div");
+      d.className = "err";
+      d.textContent = "データを読み込めませんでした。しばらくしてから、"
+        + "ページを更新してみてください。（" + e.message + "）";
+      document.querySelector(".wrap").appendChild(d);
+      $("when").textContent = "読み込みに失敗しました";
+    });
+
+  $("pwForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("pw").value;
+    if (v) { tryUnlock(v, true); }
+  });
+  $("relock").addEventListener("click", lockAgain);
+})();
+</script>
+</body>
+</html>

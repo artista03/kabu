@@ -1,0 +1,48 @@
+name: 株価を更新
+
+on:
+  schedule:
+    # 平日 16:10 JST（＝07:10 UTC）。東証の大引け15:30の後に走らせる。
+    - cron: "10 7 * * 1-5"
+  workflow_dispatch:        # 手動でも回せる
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 株価を取得してデータを作る
+        env:
+          HOLDINGS_JSON: ${{ secrets.HOLDINGS_JSON }}
+        run: python3 build_web.py
+
+      - name: 金額を暗号化する
+        env:
+          VIEW_PASSWORD: ${{ secrets.VIEW_PASSWORD }}
+        run: node encrypt.mjs
+
+      - name: 公開ファイルをコミットする
+        run: |
+          rm -f _secret.json
+          git config user.name  "kabu-bot"
+          git config user.email "kabu-bot@users.noreply.github.com"
+          git add docs/public.json docs/secret.enc
+          if git diff --staged --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "株価更新 $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')"
+            git push
+          fi

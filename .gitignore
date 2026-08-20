@@ -1,0 +1,6 @@
+# 保有データと金額の平文は、絶対にリポジトリへ入れない
+holdings.json
+_secret.json
+dump_kabutan*.html
+.DS_Store
+__pycache__/
